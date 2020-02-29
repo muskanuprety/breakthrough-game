@@ -1,3 +1,4 @@
+
 # Work by Tamara Blagojevic and Muskan Uprety
 import random
 import copy
@@ -133,7 +134,7 @@ def initial_state(row,column,pieces):
 
     
     initial=Env_state(board,"white")
-    display_state(initial)
+    
     return initial
 
 
@@ -287,15 +288,16 @@ def utility_two(state, turrn):
 def minimax(node, level): # level is 3
     front =[]
     expanded=[]
-    node2expand = node
-    current_level = 1
-    front.append((node2expand, current_level))
-    node2expand.set_level(0)
+    
+  
+    front.append(node)
+    
     #print(node2expand.get_level())
     goal_state = False
-    while current_level < level:
+    node2expand=node
+    while node2expand.get_level() <= level:
         
-        node2expand, current_level = front.pop(0)
+        node2expand = front.pop(0)
         # if node2expand not in expanded:
         babies=[]
         legal_moves=node2expand.get_state().get_legal_moves()
@@ -307,43 +309,31 @@ def minimax(node, level): # level is 3
 
                 #print(new_state.get_turn())
                 #print(new_state.get_legal_moves())
-                new_node=Node(new_state,current_level, node2expand)
+                new_node=Node(new_state,node2expand.get_level()+1, node2expand)
 
                 #print(new_node.get_level())
-                babies.append((new_node, current_level+1))
+                babies.append(new_node)
                 # babies.append(new_node)
+        expanded.append(node2expand)
         node2expand.set_child(babies)
         front.extend(babies)
-        expanded.append((node2expand, current_level))
+            
     
 
-    for leaf_node,j in expanded:        #assign utility value to leaf nodes
-        if j==level:
-            leaf_node.set_utility(utility_evasive(leaf_node.get_state(), leaf_node.get_state().get_turn()))
     
-    for i,j in expanded:
+    
+    for i in expanded:
+        
+        print(i.get_level())
         display_state(i.get_state())
-        print(j)
         print('-------')
 
-    temp = level
-    temp = temp-1                       # working my way up
-
-    while temp>=0:
-        for i,j in expanded:
-            display_state(i.get_state())
-            if j == temp:
-                if j%2==0:              #this is max
-                    baby_list = i.get_child()
-                    max(i.get_child())      
-                else:                   # this is min
-                    min(i.get_child())      
 
             
 
 
 if __name__=="__main__":
-    root_state=initial_state(3,3,1)
+    root_state=initial_state(4,3,1)
     root_node=Node(root_state,0)
     minimax(root_node,3)
 
