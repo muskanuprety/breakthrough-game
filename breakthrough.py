@@ -42,49 +42,47 @@ class Node(object):
     def utility_conquerer(self):
         turrn = self.state.get_turn()
         if turrn == "white":
-            x = (0 - len(state.get_black_list())) + random.random()
+            x = (0 - len(self.get_state().get_black_list())) + random.random()
         if turrn == "black":
-            x = (0 - len(state.get_white_list())) + random.random()
+            x = (0 - len(self.get_state().get_white_list())) + random.random()
         self.utility = x
 
     def utility_kill_and_survive(self):
         turrn = self.state.get_turn()
         if turrn == "white":
-            x = len(self.state.get_white_list())-len(self.state.get_black_list())
-            for  i in self.state.get_white_list():
+            x = len(self.get_state().get_white_list())-len(self.get_state().get_black_list())
+            for  i in self.get_state().get_white_list():
                 if i[0]==0:
-                    x+=10
+                    x+=1000
         if turrn == "black":
-            x = len(self.state.get_black_list())-len(self.state.get_white_list())
-            for  i in self.state.get_black_list():
-                if i[0]==self.state.get_row():
-                    x+=10
+            x = len(self.get_state().get_black_list())-len(self.get_state().get_white_list())
+            for  i in self.get_state().get_black_list():
+                if i[0]==self.get_state().get_row()-1:
+                    x+=1000
         x = x+ random.random()
         self.utility = x
 
     def utility_forward_move(self):
         turrn = self.state.get_turn()
+
         if turrn == "white":
-            util = 1000
-            for i in self.state.get_white_list():
-                util = util - i[0]
-                if i[0]==0:
-                    util+=1000
-            for i in self.state.get_black_list():
-                util = util - i[0]
-                if i[0]==self.state.get_row():
-                    util -=1000
+            util = 0
+            listt=[]
+            for i in self.get_state().get_white_list():
+                listt.append(i[0])
+            top=self.get_state().get_white_list()[listt.index(min(listt))]
+            util=self.get_state().get_row()-top[0]
+
+        
 
         if turrn == "black":
-            util = 1000
-            for i in self.state.get_black_list():
-                util = util + i[0]
-                if i[0]==self.state.get_row():
-                    util+=1000
-            for i in self.state.get_white_list():
-                util = util + i[0]
-                if i[0]==0:
-                    util -=1000
+            
+            util = 0
+            listt=[]
+            for i in self.get_state().get_white_list():
+                listt.append(i[0])
+            top=self.get_state().get_white_list()[listt.index(max(listt))]
+            util=top[0]
         self.utility = util
 
 class Env_state():
@@ -318,29 +316,34 @@ def utility_kill_and_survive(state, turrn):
     return (x+random.random())
 
 
-def utility_forward_move(state, turrn):
-    if turrn == "white":
-        util = 1000
-        for i in state.get_white_list():
-            util = util - i[0]
-            if i[0]==0:
-                util+=1000
-        for i in state/get_black_list():
-            util = util - i[0]
-            if i[0]==state.get_row():
-                util -=1000
+# def utility_forward_move(state, turrn):
+#     if turrn == "white":
+#         util = 0
+#         listt=[]
+#         for i in state.get_white_list():
+#             listt.append(i[0])
+#         top=state.get_white_list()[listt.index(max(listt))]
 
-    if turrn == "black":
-        util = 1000
-        for i in state.get_black_list():
-            util = util + i[0]
-            if i[0]==state.get_row():
-                util+=1000
-        for i in state/get_white_list():
-            util = util + i[0]
-            if i[0]==0:
-                util -=1000
-    return util 
+
+
+#             if i[0]==0:
+#                 util+=1000
+#         for i in state/get_black_list():
+#             util = util - i[0]
+#             if i[0]==state.get_row():
+#                 util -=1000
+
+#     if turrn == "black":
+#         util = 1000
+#         for i in state.get_black_list():
+#             util = util + i[0]
+#             if i[0]==state.get_row():
+#                 util+=1000
+#         for i in state/get_white_list():
+#             util = util + i[0]
+#             if i[0]==0:
+#                 util -=1000
+#     return util 
 
 def minimax(node, level, utility): # level is 3
     front =[]
@@ -453,7 +456,7 @@ if __name__=="__main__":
 
     root_state=initial_state(int(rows),int(columns),int(pcs))
     root_node=Node(root_state,0)
-    play_game(hrs_black,hrs_white,root_node.get_state(), int(depth))
+    play_game(hrs_white,hrs_black,root_node.get_state(), int(depth))
 
 
 
