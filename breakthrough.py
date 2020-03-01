@@ -2,6 +2,7 @@
 # Work by Tamara Blagojevic and Muskan Uprety
 import random
 import copy
+import sys
 class Node(object):
     def __init__(self, state,level,parent=None):
         self.parent = parent
@@ -38,13 +39,60 @@ class Node(object):
             x = len(self.state.get_black_list()) + random.random()
         self.utility = x
 
+    def utility_conquerer(self):
+        turrn = self.state.get_turn()
+        if turrn == "white":
+            x = (0 - len(state.get_black_list())) + random.random()
+        if turrn == "black":
+            x = (0 - len(state.get_white_list())) + random.random()
+        self.utility = x
 
+    def utility_kill_and_survive(self):
+        turrn = self.state.get_turn()
+        if turrn == "white":
+            x = len(self.state.get_white_list())-len(self.state.get_black_list())
+            for  i in self.state.get_white_list():
+                if i[0]==0:
+                    x+=10
+        if turrn == "black":
+            x = len(self.state.get_black_list())-len(self.state.get_white_list())
+            for  i in self.state.get_black_list():
+                if i[0]==self.state.get_row():
+                    x+=10
+        x = x+ random.random()
+        self.utility = x
+
+    def utility_forward_move(self):
+        turrn = self.state.get_turn()
+        if turrn == "white":
+            util = 1000
+            for i in self.state.get_white_list():
+                util = util - i[0]
+                if i[0]==0:
+                    util+=1000
+            for i in self.state.get_black_list():
+                util = util - i[0]
+                if i[0]==self.state.get_row():
+                    util -=1000
+
+        if turrn == "black":
+            util = 1000
+            for i in self.state.get_black_list():
+                util = util + i[0]
+                if i[0]==self.state.get_row():
+                    util+=1000
+            for i in self.state.get_white_list():
+                util = util + i[0]
+                if i[0]==0:
+                    util -=1000
+        self.utility = util
 
 class Env_state():
     def __init__(self, board,turn):  # White is O and black is X
         self._board = board
         self._turn = turn
         self.direction=None
+        self.pos=None
         self._row = len(self._board)
         self._column = len(self._board[0])
 
@@ -53,7 +101,10 @@ class Env_state():
 
     def get_row(self):
         return self._row
-
+    def get_pos(self):
+        return self.pos
+    def set_pos(self, n):
+        self.pos=n
     def get_column(self):
         return self._column
 
@@ -155,7 +206,8 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]-1, loc_piece[1]-1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
-                move="L"
+
+                x="L"
 
         if (direction=="UP"):
             if direction in legal[loc_piece]:
@@ -163,14 +215,14 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]-1, loc_piece[1])
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
-                move="UP"
+                x="UP"
 
         if (direction=="R"):
             if direction in legal[loc_piece]:
                 move=(loc_piece[0]-1, loc_piece[1]+1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
-                move="R"
+                x="R"
         
         new_turn="black"
 
@@ -183,7 +235,7 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]+1, loc_piece[1]-1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-                move="L"
+                x='L'
         if (direction=="UP"):
 
             if direction in legal[loc_piece]:
@@ -191,19 +243,20 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]+1, loc_piece[1])
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-                move="UP"
+                x="UP"
 
         if (direction=="R"):
             if direction in legal[loc_piece]:
                 move=(loc_piece[0]+1, loc_piece[1]+1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-                move="R"
+                x="R"
         
         new_turn="white"
 
     new_state=Env_state(last_board,new_turn)
-    new_state.set_direction(move)
+    new_state.set_direction(x)
+    new_state.set_pos(loc_piece)
 
     return new_state
 
@@ -212,9 +265,9 @@ def da_goal(state):
     
     bb = state.get_board()
     row = state.get_row()
-    if "X" in bb[0] :
+    if "O" in bb[0] :
         return True
-    if  "O" in bb[len(bb)-1]:
+    if  "X" in bb[len(bb)-1]:
         return True
     return False
         
@@ -251,7 +304,7 @@ def utility_conquerer(state, turrn):
     return x
 
 
-def utility_one(state, turrn):
+def utility_kill_and_survive(state, turrn):
     if turrn == "white":
         x = len(state.get_white_list())-len(state.get_black_list())
         for  i in state.get_white_list():
@@ -265,7 +318,7 @@ def utility_one(state, turrn):
     return (x+random.random())
 
 
-def utility_two(state, turrn):
+def utility_forward_move(state, turrn):
     if turrn == "white":
         util = 1000
         for i in state.get_white_list():
@@ -289,7 +342,7 @@ def utility_two(state, turrn):
                 util -=1000
     return util 
 
-def minimax(node, level): # level is 3
+def minimax(node, level, utility): # level is 3
     front =[]
     expanded=[]
     
@@ -322,7 +375,7 @@ def minimax(node, level): # level is 3
         node2expand.set_child(babies)
         front.extend(babies)
         
-    return(calc_utility(expanded, level, "evasive"))
+    return(calc_utility(expanded, level, utility))
     
 
     
@@ -338,9 +391,16 @@ def calc_utility(expanded, level, utility):
         if i.get_level()==level:
             if utility=="evasive":
                 i.utility_evasive()
+            if utility=="conquerer":
+                i.utility_conquerer()
+            if utility=="kill_and_survive":
+                i.utility_kill_and_survive()
+            if utility=="forward_move":
+                i.utility_forward_move()
+
                 #print(i.get_utility())
     for i in range(len(expanded)-1, -1, -1):
-        print(expanded[i].get_level())
+        #print(expanded[i].get_level())
         
         if expanded[i].get_level()!= level and expanded[i].get_level()<level:
             utilities=[]
@@ -360,17 +420,40 @@ def calc_utility(expanded, level, utility):
         
         if the_answer==i.get_utility():
 
-            d_way=((i.get_state().get_row(), i.get_state().get_column()), i.get_state().get_direction())
+            d_way=(i.get_state().get_pos(), i.get_state().get_direction())
             break
-    print(d_way)
     return d_way
 
 
-if __name__=="__main__":
-    root_state=initial_state(3,3,1)
-    root_node=Node(root_state,0)
-    minimax(root_node,3)
+def play_game(hueristic_white, hueristic_black, board_state, level):
+    game_node = Node(board_state, 0)
+    display_state(game_node.get_state())
+    while da_goal(game_node.get_state()) == False:
+        if game_node.get_state().get_turn() == "white":
+            loc, direction = minimax(game_node, level, hueristic_white)
+        if game_node.get_state().get_turn() == "black":
+            loc, direction = minimax(game_node, level, hueristic_black)
 
+        new_state = transition(game_node.get_state(), direction, loc)
+        display_state(new_state)
+        print("--------------------------------")
+        game_node = Node(new_state,0)
+
+
+
+if __name__=="__main__":                
+
+## the order of the terminal command is:  python3 breakthrough.py <no. of rows> <no. of columns> <no of rows of pieces> <hueristic_white> <hueristic_black> <depth for minimax>
+    rows = input("number of rows? ")
+    columns = input("number of columns? ")
+    pcs = input("number of rows of pieces? ")
+    hrs_white = input("Hueristic for white, Pick one: evasive/ conquerer/ forward_move/ kill_and_survive: ")
+    hrs_black = input("Hueristic for black, Pick one: evasive/ conquerer/ forward_move/ kill_and_survive: ")
+    depth = input("how deep do you want minimax to go? ")
+
+    root_state=initial_state(int(rows),int(columns),int(pcs))
+    root_node=Node(root_state,0)
+    play_game(hrs_black,hrs_white,root_node.get_state(), int(depth))
 
 
 
