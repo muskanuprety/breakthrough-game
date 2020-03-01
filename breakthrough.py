@@ -44,7 +44,7 @@ class Env_state():
     def __init__(self, board,turn):  # White is O and black is X
         self._board = board
         self._turn = turn
-
+        self.direction=None
         self._row = len(self._board)
         self._column = len(self._board[0])
 
@@ -52,7 +52,7 @@ class Env_state():
         return self._turn
 
     def get_row(self):
-        return se;f._row
+        return self._row
 
     def get_column(self):
         return self._column
@@ -76,7 +76,11 @@ class Env_state():
        
     def get_board(self):
     	return self._board
-
+    def get_direction(self):
+        return self.direction
+    
+    def set_direction(self,d):
+        self.direction=d
     
     def get_legal_moves(self):
         legal_moves={}
@@ -142,7 +146,7 @@ def transition(state,direction,loc_piece):
     last_board=copy.deepcopy(state.get_board())
     
 
-
+    move=None
     legal = state.get_legal_moves()
     if state.get_turn()=='white':
 
@@ -151,6 +155,7 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]-1, loc_piece[1]-1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
+                move="L"
 
         if (direction=="UP"):
             if direction in legal[loc_piece]:
@@ -158,14 +163,14 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]-1, loc_piece[1])
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
-            
+                move="UP"
 
         if (direction=="R"):
             if direction in legal[loc_piece]:
                 move=(loc_piece[0]-1, loc_piece[1]+1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='O'
-
+                move="R"
         
         new_turn="black"
 
@@ -178,7 +183,7 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]+1, loc_piece[1]-1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-            
+                move="L"
         if (direction=="UP"):
 
             if direction in legal[loc_piece]:
@@ -186,18 +191,19 @@ def transition(state,direction,loc_piece):
                 move=(loc_piece[0]+1, loc_piece[1])
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-            
+                move="UP"
 
         if (direction=="R"):
             if direction in legal[loc_piece]:
                 move=(loc_piece[0]+1, loc_piece[1]+1)
                 last_board[loc_piece[0]][loc_piece[1]]="."
                 last_board[move[0]][move[1]]='X'
-            
+                move="R"
         
         new_turn="white"
 
     new_state=Env_state(last_board,new_turn)
+    new_state.set_direction(move)
 
     return new_state
 
@@ -283,8 +289,6 @@ def utility_two(state, turrn):
                 util -=1000
     return util 
 
-
-
 def minimax(node, level): # level is 3
     front =[]
     expanded=[]
@@ -317,23 +321,53 @@ def minimax(node, level): # level is 3
         expanded.append(node2expand)
         node2expand.set_child(babies)
         front.extend(babies)
-            
-    
-
-    
-    
-    for i in expanded:
         
-        print(i.get_level())
-        display_state(i.get_state())
-        print('-------')
+    return(calc_utility(expanded, level, "evasive"))
+    
 
+    
+    
+    # for i in expanded:
+        
+    #     print(i.get_level())
+    #     display_state(i.get_state())
+    #     print('-------')
 
-            
+def calc_utility(expanded, level, utility):
+    for i in expanded:
+        if i.get_level()==level:
+            if utility=="evasive":
+                i.utility_evasive()
+                #print(i.get_utility())
+    for i in range(len(expanded)-1, -1, -1):
+        print(expanded[i].get_level())
+        
+        if expanded[i].get_level()!= level and expanded[i].get_level()<level:
+            utilities=[]
+            for j in expanded[i].get_child():
+
+                utilities.append(j.get_utility())
+            #print(utilities)
+
+            if expanded[i].get_level()%2==0:
+                expanded[i].set_utility(max(utilities))
+            else:
+                expanded[i].set_utility(min(utilities))
+    the_answer=expanded[0].get_utility()
+   
+    d_way=0
+    for i in expanded[0].get_child():
+        
+        if the_answer==i.get_utility():
+
+            d_way=((i.get_state().get_row(), i.get_state().get_column()), i.get_state().get_direction())
+            break
+    print(d_way)
+    return d_way
 
 
 if __name__=="__main__":
-    root_state=initial_state(4,3,1)
+    root_state=initial_state(3,3,1)
     root_node=Node(root_state,0)
     minimax(root_node,3)
 
