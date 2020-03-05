@@ -49,21 +49,27 @@ class Node(object):
 
     def utility_kill_and_survive(self):
         turrn = self.state.get_turn()
+        util=0
         if turrn == "white":
-            x = len(self.get_state().get_white_list())-len(self.get_state().get_black_list())
-            for  i in self.get_state().get_white_list():
-                if i[0]==0:
-                    x+=1000
-        if turrn == "black":
-            x = len(self.get_state().get_black_list())-len(self.get_state().get_white_list())
-            for  i in self.get_state().get_black_list():
-                if i[0]==self.get_state().get_row()-1:
-                    x+=1000
-        x = x+ random.random()
-        self.utility = x
+            util = len(self.state.get_white_list()) - len(self.get_state().get_black_list()) + random.random()
+            for i in self.get_state().get_white_list():
+                if i[0] == 0:
+                    util+=1000
 
-    def utility_forward_move(self):
-        turrn = self.state.get_turn()
+        if turrn == "black":
+            util = len(self.state.get_black_list())*len(self.state.get_black_list()) - len(self.get_state().get_white_list()) + random.random()
+            for i in self.get_state().get_white_list():
+                if i[0] == self.state.get_row()-1:
+                    util+=1000
+
+        self.utility = util
+
+
+
+            
+
+    def utility_forward_move(self, turrn):
+        # turrn = self.state.get_turn()
 
         if turrn == "white":
             util = 0
@@ -72,18 +78,25 @@ class Node(object):
                 listt.append(i[0])
             top=self.get_state().get_white_list()[listt.index(min(listt))]
             util=self.get_state().get_row()-top[0]
-
-        
+            for i in self.get_state().get_white_list():
+                if i[0] == 0:
+                    util+=1000
+            
 
         if turrn == "black":
             
             util = 0
             listt=[]
-            for i in self.get_state().get_white_list():
+            for i in self.get_state().get_black_list():
                 listt.append(i[0])
-            top=self.get_state().get_white_list()[listt.index(max(listt))]
-            util=top[0]
-        self.utility = util
+            top=self.get_state().get_black_list()[listt.index(max(listt))]
+            util=top[0]    
+            for i in self.get_state().get_white_list():
+                if i[0] == self.state.get_row()-1:
+                    util+=1000 
+
+
+        self.utility = util + random.random()
 
 class Env_state():
     def __init__(self, board,turn):  # White is O and black is X
@@ -268,87 +281,12 @@ def da_goal(state):
     if  "X" in bb[len(bb)-1]:
         return True
     return False
-        
-    # turn = state.get_turn()
-    # row = state.get_row()
-    # if turn == "white":
-    #     black = state.get_black_list()
-
-    #     for i in black:
-    #         if i[0] ==row-1:
-    #             return True
-    # if turn =="black":
-    #     white = state.get_white_list()
-    #     for i in white:
-    #         if i[0] ==0:
-    #             return True
-
-
-def utility_evasive(state, turrn):
-    
-    if turrn == "white":
-        x = len(state.get_white_list()) + random.random()
-    if turrn == "black":
-        x = len(state.get_black_list()) + random.random()
-    return x
-
-
-def utility_conquerer(state, turrn):
-    
-    if turrn == "white":
-        x = (0 - len(state.get_black_list())) + random.random()
-    if turrn == "black":
-        x = (0 - len(state.get_white_list())) + random.random()
-    return x
-
-
-def utility_kill_and_survive(state, turrn):
-    if turrn == "white":
-        x = len(state.get_white_list())-len(state.get_black_list())
-        for  i in state.get_white_list():
-            if i[0]==0:
-                x+=1000
-    if turrn == "black":
-        x = len(state.get_black_list())-len(state.get_white_list())
-        for  i in state.get_black_list():
-            if i[0]==state.get_row():
-                x+=1000
-    return (x+random.random())
-
-
-# def utility_forward_move(state, turrn):
-#     if turrn == "white":
-#         util = 0
-#         listt=[]
-#         for i in state.get_white_list():
-#             listt.append(i[0])
-#         top=state.get_white_list()[listt.index(max(listt))]
-
-
-
-#             if i[0]==0:
-#                 util+=1000
-#         for i in state/get_black_list():
-#             util = util - i[0]
-#             if i[0]==state.get_row():
-#                 util -=1000
-
-#     if turrn == "black":
-#         util = 1000
-#         for i in state.get_black_list():
-#             util = util + i[0]
-#             if i[0]==state.get_row():
-#                 util+=1000
-#         for i in state/get_white_list():
-#             util = util + i[0]
-#             if i[0]==0:
-#                 util -=1000
-#     return util 
+  
 
 def minimax(node, level, utility): # level is 3
     front =[]
     expanded=[]
-    
+    turn = node.get_state().get_turn()
   
     front.append(node)
     
@@ -378,7 +316,7 @@ def minimax(node, level, utility): # level is 3
         node2expand.set_child(babies)
         front.extend(babies)
         
-    return(calc_utility(expanded, level, utility))
+    return(calc_utility(expanded, level, utility, turn))
     
 
     
@@ -389,7 +327,7 @@ def minimax(node, level, utility): # level is 3
     #     display_state(i.get_state())
     #     print('-------')
 
-def calc_utility(expanded, level, utility):
+def calc_utility(expanded, level, utility, turn):
     for i in expanded:
         if i.get_level()==level:
             if utility=="evasive":
@@ -399,7 +337,8 @@ def calc_utility(expanded, level, utility):
             if utility=="kill_and_survive":
                 i.utility_kill_and_survive()
             if utility=="forward_move":
-                i.utility_forward_move()
+                # print(turn)
+                i.utility_forward_move(turn)
 
                 #print(i.get_utility())
     for i in range(len(expanded)-1, -1, -1):
@@ -417,7 +356,7 @@ def calc_utility(expanded, level, utility):
             else:
                 expanded[i].set_utility(min(utilities))
     the_answer=expanded[0].get_utility()
-   
+    # print(the_answer)
     d_way=0
     for i in expanded[0].get_child():
         
@@ -428,9 +367,13 @@ def calc_utility(expanded, level, utility):
     return d_way
 
 
-def play_game(hueristic_white, hueristic_black, board_state, level):
+def play_game(hueristic_white, hueristic_black, board_state, level, pcs):
+    turns_played = 0
+    black_piece=0
+    white_piece=0
     game_node = Node(board_state, 0)
     display_state(game_node.get_state())
+    print("--------------------------------")
     while da_goal(game_node.get_state()) == False:
         if game_node.get_state().get_turn() == "white":
             loc, direction = minimax(game_node, level, hueristic_white)
@@ -439,8 +382,21 @@ def play_game(hueristic_white, hueristic_black, board_state, level):
 
         new_state = transition(game_node.get_state(), direction, loc)
         display_state(new_state)
+        turns_played+=1
         print("--------------------------------")
         game_node = Node(new_state,0)
+
+    final_board = game_node.get_state().get_board()
+    # print(final_board)
+    for i in range(len(final_board)):
+        for j in range(len(final_board[0])):
+            if final_board[i][j] == "X":
+                black_piece +=1
+            if final_board[i][j] == "O":
+                white_piece +=1
+    print(str((pcs- white_piece))+" white pieces captured ")
+    print(str((pcs- black_piece))+" black pieces captured ")
+    print(str(turns_played)+ " moves played total")
 
 
 
@@ -456,7 +412,7 @@ if __name__=="__main__":
 
     root_state=initial_state(int(rows),int(columns),int(pcs))
     root_node=Node(root_state,0)
-    play_game(hrs_white,hrs_black,root_node.get_state(), int(depth))
+    play_game(hrs_white,hrs_black,root_node.get_state(), int(depth), int(pcs)*int(columns))
 
 
 
